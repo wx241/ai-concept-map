@@ -1,10 +1,24 @@
-<!-- Copyright (c) 2026 Wuping Xin. Licensed under CC BY 4.0. -->
 <!DOCTYPE html>
+<!-- Copyright (c) 2026 Wuping Xin. Licensed under CC BY 4.0. -->
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Building Blocks of Modern AI</title>
+  <meta name="description" content="An interactive concept map of modern AI: five layers from primitives like prompts, LLMs and embeddings to emerging ideas like thinking models and interpretability." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23534AB7'/%3E%3Ccircle cx='16' cy='9' r='3.5' fill='%23fff'/%3E%3Ccircle cx='8.5' cy='22' r='3.5' fill='%23fff'/%3E%3Ccircle cx='23.5' cy='22' r='3.5' fill='%23fff'/%3E%3Cpath d='M16 9L8.5 22M16 9l7.5 13M8.5 22h15' stroke='%23fff' stroke-width='1.6'/%3E%3C/svg%3E" />
+  <script>
+    // Restore the saved theme before first paint to avoid a light-mode flash.
+    (function() {
+      let saved = null;
+      try { saved = localStorage.getItem('theme'); } catch (e) {}
+      if (saved === 'dark' || saved === 'light') {
+        document.documentElement.setAttribute('data-theme', saved);
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
@@ -208,6 +222,9 @@
       display: flex; align-items: center; gap: 10px; margin-bottom: 12px;
       cursor: pointer; user-select: none;
       padding: 6px 0;
+      width: 100%;
+      background: none; border: none; border-radius: 6px;
+      font: inherit; color: inherit; text-align: left;
     }
     .lh:hover .ln, .lh:hover .lt { opacity: 0.75; }
     .ln { font-size: 13px; font-weight: 800; letter-spacing: 0.12em; color: var(--text-primary); transition: opacity 0.15s; }
@@ -220,17 +237,22 @@
       line-height: 1;
     }
     .layer.collapsed .lh-chevron { transform: rotate(-90deg); }
+    /* Collapse animates via grid rows (1fr -> 0fr), which unlike max-height: none can transition. */
     .layer-body {
-      overflow: visible;
-      max-height: none;
-      transition: max-height 0.35s ease, opacity 0.25s ease;
+      display: grid;
+      grid-template-rows: 1fr;
       opacity: 1;
+      visibility: visible;
+      transition: grid-template-rows 0.3s ease, opacity 0.25s ease, visibility 0s;
     }
+    .layer-body > * { min-height: 0; }
     .layer.collapsed .layer-body {
-      overflow: hidden;
-      max-height: 0;
+      grid-template-rows: 0fr;
       opacity: 0;
+      visibility: hidden;
+      transition: grid-template-rows 0.3s ease, opacity 0.25s ease, visibility 0s 0.3s;
     }
+    .layer.collapsed .layer-body > * { overflow: hidden; }
 
     .nodes { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -239,7 +261,8 @@
       border-radius: 10px;
       border: 1px solid transparent;
       padding: 10px 16px;
-      font-size: 14px; font-weight: 500;
+      font-family: inherit; font-size: 14px; font-weight: 500;
+      text-align: left;
       line-height: 1.2; cursor: pointer;
       transition: transform 0.15s ease, box-shadow 0.2s ease, border-color 0.2s ease;
       user-select: none;
@@ -253,6 +276,10 @@
     .nd:hover { transform: translateY(-3px); box-shadow: 0 6px 20px var(--node-hover-shadow); }
     .nd:active { transform: scale(0.97); }
     .nd.active { box-shadow: 0 0 0 2.5px var(--accent), 0 4px 16px var(--accent-glow); }
+    .nd:focus-visible, .lh:focus-visible, .layer-ctrl-btn:focus-visible, .theme-toggle:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
     .nd.lg { font-size: 15px; font-weight: 700; padding: 12px 18px; border-radius: 11px; }
     .nd.md { font-size: 14px; font-weight: 600; padding: 10px 16px; }
     .nd.sm { font-size: 12.5px; font-weight: 500; padding: 7px 12px; border-radius: 7px; }
@@ -386,8 +413,8 @@
 <div class="wrap">
   <div class="grid-bg"></div>
   <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
-    <span class="theme-toggle-icon sun" aria-hidden="true"></span>
-    <span class="theme-toggle-icon moon" aria-hidden="true"></span>
+    <span class="theme-toggle-icon sun" aria-hidden="true">&#9728;</span>
+    <span class="theme-toggle-icon moon" aria-hidden="true">&#9790;</span>
   </button>
   <div class="z">
 
@@ -408,37 +435,37 @@
     <div class="connector-dots"><div class="connector-dot"></div><div class="connector-dot"></div><div class="connector-dot"></div></div>
 
     <div class="layer" id="layer1">
-      <div class="lh" onclick="toggleLayer('layer1')"><span class="ln">LAYER 01</span><span class="lt">Primitives</span><span class="ll"></span><span class="lh-chevron">&#9660;</span></div>
-      <div class="layer-body"><div class="l01">
+      <button type="button" class="lh" aria-expanded="true" aria-controls="layer1-body" onclick="toggleLayer('layer1')"><span class="ln">LAYER 01</span><span class="lt">Primitives</span><span class="ll"></span><span class="lh-chevron" aria-hidden="true">&#9660;</span></button>
+      <div class="layer-body" id="layer1-body"><div class="l01">
         <div class="col">
           <div class="col-hd c-pu">Prompt</div>
-          <div class="nd lg pu" onclick="show('prompt',this)" style="animation-delay:0.05s">Prompt</div>
+          <button type="button" class="nd lg pu" onclick="show('prompt',this)" style="animation-delay:0.05s">Prompt</button>
           <div class="sb sb-pu">
             <div class="nodes" style="flex-direction:column;gap:4px;">
-              <div class="nd sm pu2" onclick="show('temperature',this)" style="animation-delay:0.1s">Temperature</div>
-              <div class="nd sm pu2" onclick="show('context',this)" style="animation-delay:0.15s">Context Window</div>
+              <button type="button" class="nd sm pu2" onclick="show('temperature',this)" style="animation-delay:0.1s">Temperature</button>
+              <button type="button" class="nd sm pu2" onclick="show('context',this)" style="animation-delay:0.15s">Context Window</button>
             </div>
-            <div class="sb-note">inference parameters</div>
+            <div class="sb-note">inference settings &amp; limits</div>
           </div>
         </div>
         <div class="col">
           <div class="col-hd c-bl">LLM</div>
-          <div class="nd lg bl" onclick="show('llm',this)" style="animation-delay:0.1s">Large Language Model</div>
+          <button type="button" class="nd lg bl" onclick="show('llm',this)" style="animation-delay:0.1s">Large Language Model</button>
           <div class="sb sb-bl">
             <div class="nodes" style="flex-direction:column;gap:4px;">
-              <div class="nd sm bl2" onclick="show('transformer',this)" style="animation-delay:0.15s">Transformer</div>
-              <div class="nd sm bl2" onclick="show('moe',this)" style="animation-delay:0.2s">MoE</div>
+              <button type="button" class="nd sm bl2" onclick="show('transformer',this)" style="animation-delay:0.15s">Transformer</button>
+              <button type="button" class="nd sm bl2" onclick="show('moe',this)" style="animation-delay:0.2s">MoE</button>
             </div>
             <div class="sb-note">model architectures</div>
           </div>
         </div>
         <div class="col">
           <div class="col-hd c-te">Embedding</div>
-          <div class="nd lg te" onclick="show('embedding',this)" style="animation-delay:0.15s">Embedding</div>
+          <button type="button" class="nd lg te" onclick="show('embedding',this)" style="animation-delay:0.15s">Embedding</button>
           <div class="sb sb-te">
             <div class="nodes" style="flex-direction:column;gap:4px;">
-              <div class="nd sm te2" onclick="show('vectorspace',this)" style="animation-delay:0.2s">Vector Space</div>
-              <div class="nd sm te2" onclick="show('cosine',this)" style="animation-delay:0.25s">Cosine Similarity</div>
+              <button type="button" class="nd sm te2" onclick="show('vectorspace',this)" style="animation-delay:0.2s">Vector Space</button>
+              <button type="button" class="nd sm te2" onclick="show('cosine',this)" style="animation-delay:0.25s">Cosine Similarity</button>
             </div>
             <div class="sb-note">semantic math foundations</div>
           </div>
@@ -449,60 +476,62 @@
     <div class="stem-wrap"><div class="stem"></div></div>
 
     <div class="layer" id="layer2">
-      <div class="lh" onclick="toggleLayer('layer2')"><span class="ln">LAYER 02</span><span class="lt">Compositions</span><span class="ll"></span><span class="lh-chevron">&#9660;</span></div>
-      <div class="layer-body"><div class="nodes">
-        <div class="nd pu" onclick="show('fc',this)" style="animation-delay:0.15s">Function Calling</div>
-        <div class="nd pu" onclick="show('mcp',this)" style="animation-delay:0.2s">MCP</div>
-        <div class="nd te" onclick="show('vectordb',this)" style="animation-delay:0.25s">Vector Database</div>
-        <div class="nd am" onclick="show('rag',this)" style="animation-delay:0.3s">RAG</div>
-        <div class="nd gy" onclick="show('guardrails',this)" style="animation-delay:0.35s">Guardrails</div>
-        <div class="nd bl" onclick="show('multimodal',this)" style="animation-delay:0.4s">Multimodal</div>
-        <div class="nd bl" onclick="show('promptcache',this)" style="animation-delay:0.45s">Prompt Caching</div>
+      <button type="button" class="lh" aria-expanded="true" aria-controls="layer2-body" onclick="toggleLayer('layer2')"><span class="ln">LAYER 02</span><span class="lt">Compositions</span><span class="ll"></span><span class="lh-chevron" aria-hidden="true">&#9660;</span></button>
+      <div class="layer-body" id="layer2-body"><div class="nodes">
+        <button type="button" class="nd pu" onclick="show('fc',this)" style="animation-delay:0.15s">Function Calling</button>
+        <button type="button" class="nd pu" onclick="show('mcp',this)" style="animation-delay:0.2s">MCP</button>
+        <button type="button" class="nd te" onclick="show('vectordb',this)" style="animation-delay:0.25s">Vector Database</button>
+        <button type="button" class="nd am" onclick="show('rag',this)" style="animation-delay:0.3s">RAG</button>
+        <button type="button" class="nd gy" onclick="show('guardrails',this)" style="animation-delay:0.35s">Guardrails</button>
+        <button type="button" class="nd bl" onclick="show('multimodal',this)" style="animation-delay:0.4s">Multimodal</button>
+        <button type="button" class="nd bl" onclick="show('promptcache',this)" style="animation-delay:0.45s">Prompt Caching</button>
       </div></div>
     </div>
 
     <div class="stem-wrap"><div class="stem"></div></div>
 
     <div class="layer" id="layer3">
-      <div class="lh" onclick="toggleLayer('layer3')"><span class="ln">LAYER 03</span><span class="lt">Model Adaptation</span><span class="ll"></span><span class="lh-chevron">&#9660;</span></div>
-      <div class="layer-body"><div class="nodes">
-        <div class="nd gn" onclick="show('sft',this)" style="animation-delay:0.25s">SFT</div>
-        <div class="nd gn" onclick="show('lora',this)" style="animation-delay:0.3s">LoRA</div>
-        <div class="nd gn" onclick="show('rlhf',this)" style="animation-delay:0.35s">RLHF / DPO</div>
-        <div class="nd gn" onclick="show('distill',this)" style="animation-delay:0.4s">Knowledge Distillation</div>
-      </div>
-      <div class="layer-note">These adapt a pre-trained base model, not training from scratch. Pre-training costs tens of millions of dollars; only a handful of labs do it.</div>
-    </div></div>
+      <button type="button" class="lh" aria-expanded="true" aria-controls="layer3-body" onclick="toggleLayer('layer3')"><span class="ln">LAYER 03</span><span class="lt">Model Adaptation</span><span class="ll"></span><span class="lh-chevron" aria-hidden="true">&#9660;</span></button>
+      <div class="layer-body" id="layer3-body"><div>
+        <div class="nodes">
+          <button type="button" class="nd gn" onclick="show('sft',this)" style="animation-delay:0.25s">SFT</button>
+          <button type="button" class="nd gn" onclick="show('lora',this)" style="animation-delay:0.3s">LoRA</button>
+          <button type="button" class="nd gn" onclick="show('rlhf',this)" style="animation-delay:0.35s">RLHF / DPO</button>
+          <button type="button" class="nd gn" onclick="show('distill',this)" style="animation-delay:0.4s">Knowledge Distillation</button>
+        </div>
+        <div class="layer-note">These adapt a pre-trained base model, not training from scratch. Pre-training a frontier model costs tens to hundreds of millions of dollars; only a handful of labs do it.</div>
+      </div></div>
+    </div>
 
     <div class="stem-wrap"><div class="stem"></div></div>
 
     <div class="layer" id="layer4">
-      <div class="lh" onclick="toggleLayer('layer4')"><span class="ln">LAYER 04</span><span class="lt">Deployment</span><span class="ll"></span><span class="lh-chevron">&#9660;</span></div>
-      <div class="layer-body"><div class="nodes">
-        <div class="nd pu" onclick="show('agent',this)" style="animation-delay:0.35s">Agent</div>
-        <div class="nd te" onclick="show('finetune',this)" style="animation-delay:0.4s">Fine-tuning</div>
-        <div class="nd am" onclick="show('framework',this)" style="animation-delay:0.45s">Framework</div>
-        <div class="nd gy" onclick="show('eval',this)" style="animation-delay:0.5s">Evals</div>
-        <div class="nd gy" onclick="show('redteam',this)" style="animation-delay:0.55s">Red Teaming</div>
-        <div class="nd bl" onclick="show('smallmodel',this)" style="animation-delay:0.6s">Small Model</div>
+      <button type="button" class="lh" aria-expanded="true" aria-controls="layer4-body" onclick="toggleLayer('layer4')"><span class="ln">LAYER 04</span><span class="lt">Deployment</span><span class="ll"></span><span class="lh-chevron" aria-hidden="true">&#9660;</span></button>
+      <div class="layer-body" id="layer4-body"><div class="nodes">
+        <button type="button" class="nd pu" onclick="show('agent',this)" style="animation-delay:0.35s">Agent</button>
+        <button type="button" class="nd te" onclick="show('finetune',this)" style="animation-delay:0.4s">Fine-tuning</button>
+        <button type="button" class="nd am" onclick="show('framework',this)" style="animation-delay:0.45s">Framework</button>
+        <button type="button" class="nd gy" onclick="show('eval',this)" style="animation-delay:0.5s">Evals</button>
+        <button type="button" class="nd gy" onclick="show('redteam',this)" style="animation-delay:0.55s">Red Teaming</button>
+        <button type="button" class="nd bl" onclick="show('smallmodel',this)" style="animation-delay:0.6s">Small Model</button>
       </div></div>
     </div>
 
     <div class="stem-wrap"><div class="stem"></div></div>
 
     <div class="layer" id="layer5">
-      <div class="lh" onclick="toggleLayer('layer5')"><span class="ln">LAYER 05</span><span class="lt">Emerging</span><span class="ll"></span><span class="lh-chevron">&#9660;</span></div>
-      <div class="layer-body"><div class="nodes">
-        <div class="nd co" onclick="show('multiagent',this)" style="animation-delay:0.45s">Multi-Agent Systems</div>
-        <div class="nd co" onclick="show('syndata',this)" style="animation-delay:0.5s">Synthetic Data</div>
-        <div class="nd co" onclick="show('interp',this)" style="animation-delay:0.55s">Interpretability</div>
-        <div class="nd co" onclick="show('thinking',this)" style="animation-delay:0.6s">Thinking Model</div>
-        <div class="nd co" onclick="show('testtime',this)" style="animation-delay:0.65s">Test-Time Compute</div>
+      <button type="button" class="lh" aria-expanded="true" aria-controls="layer5-body" onclick="toggleLayer('layer5')"><span class="ln">LAYER 05</span><span class="lt">Emerging</span><span class="ll"></span><span class="lh-chevron" aria-hidden="true">&#9660;</span></button>
+      <div class="layer-body" id="layer5-body"><div class="nodes">
+        <button type="button" class="nd co" onclick="show('multiagent',this)" style="animation-delay:0.45s">Multi-Agent Systems</button>
+        <button type="button" class="nd co" onclick="show('syndata',this)" style="animation-delay:0.5s">Synthetic Data</button>
+        <button type="button" class="nd co" onclick="show('interp',this)" style="animation-delay:0.55s">Interpretability</button>
+        <button type="button" class="nd co" onclick="show('thinking',this)" style="animation-delay:0.6s">Thinking Model</button>
+        <button type="button" class="nd co" onclick="show('testtime',this)" style="animation-delay:0.65s">Test-Time Compute</button>
       </div></div>
     </div>
 
     <div class="footer">
-      <div class="footer-note">The lower the layer, the more stable. Every AI product is a combination of these blocks. Map any pitch, any architecture, any product to this table.</div>
+      <div class="footer-note">The lower the layer, the more stable. Every AI product is a combination of these blocks. Map any pitch, any architecture, any product to this map.</div>
       <div class="footer-right">
         <div class="footer-brand">&copy; 2026 Wuping Xin</div>
         <div class="footer-license">Licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a></div>
@@ -513,7 +542,7 @@
 </div>
 <div class="divider" id="divider"></div>
 <div class="detail-sidebar" id="sidebar">
-  <div class="detail" id="panel">
+  <div class="detail" id="panel" aria-live="polite">
     <div class="detail-layer">Select a concept</div>
     <div class="detail-title" style="color:var(--text-hint);">Click any node to see its explanation here</div>
   </div>
@@ -521,37 +550,37 @@
 </div>
 <script>
 const D = {
-  prompt:      { layer:'Layer 01 -- Primitives', title:'Prompt', badge:'Prompt', bcls:'pu', desc:"The instruction you give the model. It sounds trivial until you realize that changing one word can flip the output completely. That sensitivity isn't a bug; it's the entire interface. Prompt engineering exists because of it.", note:'Every other layer in this map is ultimately about improving what goes into, or comes out of, a prompt.' },
-  temperature: { layer:'Layer 01 -- Prompt parameters', title:'Temperature', badge:'Inference parameter', bcls:'pu2', desc:"Controls how random the model's output is. At 0, it always picks the most probable next token, deterministic and predictable. At higher values, it samples less likely tokens, more creative, more unpredictable. Most production systems run between 0 and 0.7.", note:'Low temperature for factual tasks. High temperature for creative ones. Some APIs also expose top-p (nucleus sampling) as a complementary control.' },
-  context:     { layer:'Layer 01 -- Prompt parameters', title:'Context Window', badge:'Inference parameter', bcls:'pu2', desc:"The maximum amount of text a model can see at once, input and output combined. Models now range from 8K to over 1M tokens. Bigger windows let you feed entire codebases or books, but cost and latency scale with length.", note:'Context window is one of the most important practical constraints in production AI. It is the core problem RAG was invented to work around, and prompt caching was invented to make affordable.' },
-  llm:         { layer:'Layer 01 -- Primitives', title:'Large Language Model', badge:'LLM', bcls:'bl', desc:"The engine. ChatGPT, Claude, Gemini, Llama are all LLMs. They take a prompt and generate a continuation, token by token, based on patterns learned from vast amounts of text. Everything else in this map either feeds them better input, constrains their output, or extends what they can act on.", note:'The LLM is the one primitive that everything else orbits.' },
-  transformer: { layer:'Layer 01 -- LLM architectures', title:'Transformer', badge:'Architecture', bcls:'bl2', desc:"The architecture underlying virtually every modern LLM since 2017. Its key innovation is the attention mechanism, where each token can directly attend to every other token in context, capturing long-range relationships that older architectures (RNNs, LSTMs) struggled with. Variants like GPT (decoder-only) and BERT (encoder-only) are both transformers.", note:'"Attention Is All You Need," the 2017 Google paper that started it all.' },
-  moe:         { layer:'Layer 01 -- LLM architectures', title:'Mixture of Experts', badge:'MoE', bcls:'bl2', desc:"Instead of activating the whole model for every token, MoE routes each token to a subset of expert sub-networks. GPT-4, Mixtral, and DeepSeek-V3 use this approach. You get a model that behaves like a much larger one, but only pays compute for a fraction of the parameters per query.", note:'MoE raises the capability ceiling without proportionally raising inference cost. The tradeoff is higher total parameter count (more memory) and routing complexity.' },
-  embedding:   { layer:'Layer 01 -- Primitives', title:'Embedding', badge:'Embedding', bcls:'te', desc:"Converts text (or images, audio) into a list of numbers (a vector) that captures its meaning. The key property: semantically similar content maps to numerically similar vectors. 'The cat sat on the mat' and 'A kitten was resting on the rug' end up close together in vector space.", note:'Without embeddings there is no semantic search, no vector database, and no RAG.' },
-  vectorspace: { layer:'Layer 01 -- Embedding foundations', title:'Vector Space', badge:'Concept', bcls:'te2', desc:"The high-dimensional mathematical space where embeddings live. Each piece of text is a point in this space. Meaning becomes geometry: related concepts cluster, analogies become directions, similarity becomes distance.", note:'Word2Vec famously showed: king - man + woman = queen. That arithmetic happens in vector space.' },
-  cosine:      { layer:'Layer 01 -- Embedding foundations', title:'Cosine Similarity', badge:'Metric', bcls:'te2', desc:"The standard way to measure closeness between two embeddings. Rather than straight-line (Euclidean) distance, it measures the angle between vectors, which is more robust when vectors have different magnitudes. Score ranges from -1 (opposite) to 1 (identical).", note:'Vector databases perform billions of approximate cosine similarity calculations using algorithms like HNSW and IVF for speed.' },
-  fc:          { layer:'Layer 02 -- Compositions', title:'Function Calling', badge:'Function Calling', bcls:'pu', desc:"Lets the LLM invoke external tools or APIs as part of generating a response. Ask about today's weather and the model calls a weather API, reads the result, then answers. It transforms the LLM from a static knowledge source into something that can reach out and act in the world.", note:"The primitive that makes Agents possible. Without function calling, an agent can think but can't act." },
-  mcp:         { layer:'Layer 02 -- Compositions', title:'Model Context Protocol', badge:'MCP', bcls:'pu', desc:"An open standard (introduced by Anthropic) that provides a universal way for LLMs to connect to external tools, data sources, and services. Instead of each tool needing its own custom integration, MCP defines a shared protocol, like USB-C for AI tools. Servers expose capabilities; clients (AI apps) discover and call them.", note:'MCP turns the N-times-M integration problem (N models times M tools) into N+M. Adopted by Claude, Cursor, and a growing ecosystem of third-party servers.' },
-  vectordb:    { layer:'Layer 02 -- Compositions', title:'Vector Database', badge:'Vector DB', bcls:'te', desc:"A database optimized for storing and querying embeddings at scale. Instead of exact keyword matching, you query with 'find the K vectors most similar to this one'. Pinecone, Weaviate, Chroma, Qdrant, and pgvector are common choices. The storage layer that makes RAG work.", note:'A vector DB without embeddings is useless. Embeddings without a vector DB are unscalable.' },
-  rag:         { layer:'Layer 02 -- Compositions', title:'Retrieval-Augmented Generation', badge:'RAG', bcls:'am', desc:"The most widely deployed enterprise AI pattern. At query time: retrieve the most relevant document chunks from a vector DB, inject them into the prompt, and the LLM answers grounded in real content rather than relying on its training data alone. Solves the core problem of LLMs not knowing your private or recent data.", note:'RAG is not a model. It is an architecture pattern that chains Embedding + Vector DB + LLM. Chunking strategy and retrieval quality matter more than model choice.' },
-  guardrails:  { layer:'Layer 02 -- Compositions', title:'Guardrails', badge:'Safety layer', bcls:'gy', desc:"Runtime filters on both sides of your AI system. Input guardrails catch malicious prompts, injection attacks, and off-topic requests before they reach the model. Output guardrails check that responses don't leak sensitive data, violate policy, or return malformed formats.", note:'Frequently skipped in prototypes. Always regretted in production.' },
-  multimodal:  { layer:'Layer 02 -- Compositions', title:'Multimodal Model', badge:'Multimodal', bcls:'bl', desc:"LLMs extended to understand and sometimes generate images, audio, and video in addition to text. GPT-4o, Claude 4, and Gemini are multimodal. You can drop a screenshot, chart, or diagram directly into the prompt without manually transcribing it.", note:'The boundary between vision models and language models has largely dissolved. Audio and video understanding are following the same trajectory.' },
-  promptcache: { layer:'Layer 02 -- Compositions', title:'Prompt Caching', badge:'Optimization', bcls:'bl', desc:"A technique where the model provider caches the internal computation (KV cache) for a prefix of your prompt that stays the same across requests. If you send the same long system prompt or document context repeatedly, subsequent calls skip re-processing that prefix -- dramatically cutting latency and cost.", note:'Especially valuable for RAG pipelines, long system prompts, and agentic loops where the same context is reused across many calls.' },
-  sft:         { layer:'Layer 03 -- Model Adaptation', title:'Supervised Fine-Tuning', badge:'SFT', bcls:'gn', desc:"The most direct adaptation method: collect labeled (input, ideal output) pairs, then continue training the model on them. You show it what good answers look like in your domain. Applied to a pre-trained base LLM -- not training from scratch. SFT is typically the first step before more nuanced alignment methods like RLHF or DPO.", note:'SFT alone is often sufficient for domain adaptation. Data quality matters far more than data quantity.' },
-  lora:        { layer:'Layer 03 -- Model Adaptation', title:'Low-Rank Adaptation', badge:'LoRA', bcls:'gn', desc:"A parameter-efficient fine-tuning technique. The original model weights stay frozen; small trainable low-rank matrices are inserted alongside them. Only these small matrices are updated during training. Result: domain-specific behavior at roughly 1% of the compute and memory cost of full fine-tuning. QLoRA combines this with quantization for even greater efficiency.", note:'LoRA made personal and on-device fine-tuning practical. It is the reason consumer-grade model adaptation exists.' },
-  rlhf:        { layer:'Layer 03 -- Model Adaptation', title:'RLHF / DPO', badge:'Alignment', bcls:'gn', desc:"Methods for aligning model behavior with human preferences. In RLHF, human raters compare outputs, a reward model is trained on those preferences, then reinforcement learning shapes the LLM. DPO (Direct Preference Optimization) achieves similar results more simply by skipping the reward model and optimizing the LLM directly on preference pairs. Both are applied after SFT.", note:'RLHF shaped ChatGPT\'s helpfulness. DPO has become the more common choice in 2025-26 due to its simplicity and stability.' },
-  distill:     { layer:'Layer 03 -- Model Adaptation', title:'Knowledge Distillation', badge:'Distillation', bcls:'gn', desc:"A large capable model (teacher) generates training signals for a smaller model (student). The student learns to mimic the teacher's output distribution, not just hard labels. The student model already exists as a pre-trained base -- distillation transfers capability into it, making it punch above its weight class.", note:'Why small models keep getting better: they are trained on the outputs of much larger ones. DeepSeek, Phi, and Gemma all leverage distillation heavily.' },
-  agent:       { layer:'Layer 04 -- Deployment', title:'Agent', badge:'Agent', bcls:'pu', desc:"An LLM operating in a loop: receive goal, plan, act via function calls, observe results, adjust, repeat until done. The shift from answerer to executor. Agents can browse the web, write and run code, manage files, query databases -- anything reachable via an API or tool.", note:"The hard problem isn't making agents act. It's making them stop gracefully when something goes wrong, and knowing when to ask for human input." },
-  finetune:    { layer:'Layer 04 -- Deployment', title:'Fine-tuning', badge:'Fine-tuning', bcls:'te', desc:"Retraining a base model on your own domain data so it internalizes your knowledge, style, and terminology. More thorough than RAG -- the knowledge is baked into the weights, not retrieved at runtime. Uses the Layer 03 adaptation methods (SFT, LoRA, etc.) as its implementation techniques.", note:'Bad data in, bad model out. Fine-tuning amplifies both the quality and the flaws of your dataset.' },
-  framework:   { layer:'Layer 04 -- Deployment', title:'Framework', badge:'LangChain, LlamaIndex, Vercel AI SDK', bcls:'am', desc:"Developer tooling that handles the plumbing: prompt templates, memory management, tool orchestration, chain composition, streaming. Reduces boilerplate dramatically, but adds an abstraction layer that can make debugging harder when things break.", note:'Frameworks are great for speed. Less great when something breaks in production at 2am and the error is three abstractions deep.' },
-  eval:        { layer:'Layer 04 -- Deployment', title:'Evals', badge:'Evaluation', bcls:'gy', desc:"Systematic measurement of AI system quality. Evals are to AI what tests are to software. They range from simple accuracy checks against known answers to LLM-as-judge approaches where another model rates output quality. Without evals, you're shipping vibes.", note:'If you can\'t measure it, you can\'t improve it. Evals should run in CI, not just before launch.' },
-  redteam:     { layer:'Layer 04 -- Deployment', title:'Red Teaming', badge:'Adversarial testing', bcls:'gy', desc:"Systematically attacking your own AI system to find failure modes before users do. Covers jailbreaks, prompt injection, data extraction, hallucination triggers, and general edge case discovery. Increasingly automated with tools that generate adversarial inputs at scale.", note:'Teams that skip red teaming do it in production instead. Users will find what you missed.' },
-  smallmodel:  { layer:'Layer 04 -- Deployment', title:'Small Model', badge:'Small / Distilled Model', bcls:'bl', desc:"Compact, fast, cheap models optimized for specific tasks. For classification, intent detection, extraction, or simple Q&A, a small model (Phi, Gemma, Llama 8B) often matches a frontier model at a fraction of cost and latency. Defaulting to the biggest available model is a common and expensive mistake.", note:'Match the model to the task. Not every problem needs a frontier model.' },
-  multiagent:  { layer:'Layer 05 -- Emerging', title:'Multi-Agent Systems', badge:'Multi-Agent', bcls:'co', desc:"Multiple AI agents collaborating, each specialized, each handling part of the problem. One researches, one writes, one critiques, one executes. They can debate, divide labor, and check each other's work. The coordination overhead, error propagation, and failure modes are the still-unsolved parts.", note:'The gap between the promise and reliability of multi-agent systems remains significant, though frameworks like CrewAI and AutoGen are narrowing it.' },
-  syndata:     { layer:'Layer 05 -- Emerging', title:'Synthetic Data', badge:'Synthetic Data', bcls:'co', desc:"Using AI to generate training data for AI. When real data is scarce, expensive, or privacy-sensitive, synthetic data fills the gap. As model quality improves, synthetic data quality improves too, enabling a flywheel where better models produce better training data for the next generation.", note:'One of the main answers to "what do you train on once you\'ve consumed the internet?" Model collapse, where models degrade from training on too much synthetic data -- is the key risk to manage.' },
-  interp:      { layer:'Layer 05 -- Emerging', title:'Interpretability', badge:'Mechanistic Interpretability', bcls:'co', desc:"The effort to understand what is actually happening inside a model: which neurons activate for which concepts, how circuits implement behaviors. Researchers have identified features corresponding to specific concepts, including safety-relevant patterns like deception, using techniques like sparse autoencoders on model activations.", note:"You can't fully trust or control a system you don't understand. Interpretability is the long road to real AI safety." },
-  thinking:    { layer:'Layer 05 -- Emerging', title:'Thinking Model', badge:'Reasoning Model', bcls:'co', desc:"Models that reason before answering -- they spend extra compute at inference time working through a problem step-by-step before committing to a response. OpenAI's o-series, Claude's extended thinking mode, and Gemini's thinking mode all implement this. Dramatically better at math, code, logic, and multi-step planning.", note:'Thinking models trade latency and cost for accuracy. They are typically 5-20x slower and costlier than standard models for the same task.' },
-  testtime:    { layer:'Layer 05 -- Emerging', title:'Test-Time Compute', badge:'Scaling paradigm', bcls:'co', desc:"The idea that you can improve AI performance by spending more compute at inference time rather than only at training time. Thinking models are one instance. Other approaches include generating multiple candidate answers and selecting the best (best-of-N), self-verification loops, and tree search over reasoning paths.", note:'Training-time scaling (bigger models, more data) dominated 2020-2023. Test-time compute scaling is the new frontier, letting existing models punch above their weight.' },
+  prompt:      { layer:"Layer 01 — Primitives", title:"Prompt", badge:"Prompt", bcls:"pu", desc:"The instruction you give the model. It sounds trivial until you realize that changing one word can flip the output completely. That sensitivity isn't a bug; it's the entire interface. Prompt engineering exists because of it.", note:"Every other layer in this map is ultimately about improving what goes into, or comes out of, a prompt." },
+  temperature: { layer:"Layer 01 — Inference settings", title:"Temperature", badge:"Sampling parameter", bcls:"pu2", desc:"Controls how random the model's output is. At 0, it always picks the most probable next token, which makes output focused and repeatable. At higher values, it samples less likely tokens: more creative, more unpredictable. Most production systems run between 0 and 0.7.", note:"Low temperature for factual tasks. High temperature for creative ones. Even at 0, hosted APIs are not always perfectly deterministic, since batching and floating-point effects can vary results slightly. Some APIs also expose top-p (nucleus sampling) as a complementary control." },
+  context:     { layer:"Layer 01 — Inference limits", title:"Context Window", badge:"Model property", bcls:"pu2", desc:"The maximum amount of text a model can see at once, input and output combined. It is fixed by the model, not a setting you tune. Models now range from 8K to over 1M tokens. Bigger windows let you feed entire codebases or books, but cost and latency scale with length.", note:"Context window is one of the most important practical constraints in production AI. It is the core problem RAG was invented to work around, and prompt caching was invented to make affordable." },
+  llm:         { layer:"Layer 01 — Primitives", title:"Large Language Model", badge:"LLM", bcls:"bl", desc:"The engine. ChatGPT, Claude, Gemini, Llama are all LLMs. They take a prompt and generate a continuation, token by token, based on patterns learned from vast amounts of text. Everything else in this map either feeds them better input, constrains their output, or extends what they can act on.", note:"The LLM is the one primitive that everything else orbits." },
+  transformer: { layer:"Layer 01 — LLM architectures", title:"Transformer", badge:"Architecture", bcls:"bl2", desc:"The architecture underlying virtually every modern LLM since 2017. Its key innovation is the attention mechanism, where each token can directly attend to every other token in context, capturing long-range relationships that older architectures (RNNs, LSTMs) struggled with. Variants like GPT (decoder-only) and BERT (encoder-only) are both transformers.", note:"“Attention Is All You Need,” the 2017 Google paper that started it all." },
+  moe:         { layer:"Layer 01 — LLM architectures", title:"Mixture of Experts", badge:"MoE", bcls:"bl2", desc:"Instead of activating the whole model for every token, MoE routes each token to a subset of expert sub-networks. GPT-4 (reportedly), Mixtral, and DeepSeek-V3 use this approach. You get a model that behaves like a much larger one, but only pays compute for a fraction of the parameters per query.", note:"MoE raises the capability ceiling without proportionally raising inference cost. The tradeoff is higher total parameter count (more memory) and routing complexity." },
+  embedding:   { layer:"Layer 01 — Primitives", title:"Embedding", badge:"Embedding", bcls:"te", desc:"Converts text (or images, audio) into a list of numbers (a vector) that captures its meaning. The key property: semantically similar content maps to numerically similar vectors. “The cat sat on the mat” and “A kitten was resting on the rug” end up close together in vector space.", note:"Without embeddings there is no semantic search, no vector database, and no RAG." },
+  vectorspace: { layer:"Layer 01 — Embedding foundations", title:"Vector Space", badge:"Concept", bcls:"te2", desc:"The high-dimensional mathematical space where embeddings live. Each piece of text is a point in this space. Meaning becomes geometry: related concepts cluster, analogies become directions, similarity becomes distance.", note:"Word2Vec famously showed: king − man + woman ≈ queen. That arithmetic happens in vector space." },
+  cosine:      { layer:"Layer 01 — Embedding foundations", title:"Cosine Similarity", badge:"Metric", bcls:"te2", desc:"The standard way to measure closeness between two embeddings. Rather than straight-line (Euclidean) distance, it measures the angle between vectors, which is more robust when vectors have different magnitudes. Score ranges from −1 (opposite) to 1 (identical).", note:"At scale, vector databases use approximate nearest-neighbor indexes like HNSW and IVF so a query never has to be compared against every stored vector. Many systems normalize embeddings and use dot product (inner product), which then equals cosine similarity." },
+  fc:          { layer:"Layer 02 — Compositions", title:"Function Calling", badge:"Function Calling", bcls:"pu", desc:"Lets the LLM invoke external tools or APIs as part of generating a response. Ask about today's weather and the model calls a weather API, reads the result, then answers. It transforms the LLM from a static knowledge source into something that can reach out and act in the world.", note:"The primitive that makes Agents possible. Without function calling, an agent can think but can't act." },
+  mcp:         { layer:"Layer 02 — Compositions", title:"Model Context Protocol", badge:"MCP", bcls:"pu", desc:"An open standard (introduced by Anthropic) that provides a universal way for LLMs to connect to external tools, data sources, and services. Instead of each tool needing its own custom integration, MCP defines a shared protocol, like USB-C for AI tools. Servers expose capabilities; clients (AI apps) discover and call them.", note:"MCP turns the N-times-M integration problem (N models times M tools) into N+M. It has been adopted across the ecosystem, including by OpenAI, Google, Microsoft, and Cursor, with a large and growing set of third-party servers." },
+  vectordb:    { layer:"Layer 02 — Compositions", title:"Vector Database", badge:"Vector DB", bcls:"te", desc:"A database optimized for storing and querying embeddings at scale. Instead of exact keyword matching, you query with “find the K vectors most similar to this one.” Pinecone, Weaviate, Chroma, Qdrant, and pgvector are common choices. The storage layer that makes RAG work.", note:"A vector DB without embeddings is useless. Embeddings without a vector DB are unscalable." },
+  rag:         { layer:"Layer 02 — Compositions", title:"Retrieval-Augmented Generation", badge:"RAG", bcls:"am", desc:"The most widely deployed enterprise AI pattern. At query time: retrieve the most relevant document chunks from a vector DB, inject them into the prompt, and the LLM answers grounded in real content rather than relying on its training data alone. Solves the core problem of LLMs not knowing your private or recent data.", note:"RAG is not a model. It is an architecture pattern that chains Embedding + Vector DB + LLM. Chunking strategy and retrieval quality matter more than model choice." },
+  guardrails:  { layer:"Layer 02 — Compositions", title:"Guardrails", badge:"Safety layer", bcls:"gy", desc:"Runtime filters on both sides of your AI system. Input guardrails catch malicious prompts, injection attacks, and off-topic requests before they reach the model. Output guardrails check that responses don't leak sensitive data, violate policy, or return malformed formats.", note:"Frequently skipped in prototypes. Always regretted in production." },
+  multimodal:  { layer:"Layer 02 — Compositions", title:"Multimodal Model", badge:"Multimodal", bcls:"bl", desc:"LLMs extended to understand and sometimes generate images, audio, and video in addition to text. GPT-4o, Claude 4, and Gemini are multimodal. You can drop a screenshot, chart, or diagram directly into the prompt without manually transcribing it.", note:"The boundary between vision models and language models has largely dissolved. Audio and video understanding are following the same trajectory." },
+  promptcache: { layer:"Layer 02 — Compositions", title:"Prompt Caching", badge:"Optimization", bcls:"bl", desc:"A technique where the model provider caches the internal computation (KV cache) for a prefix of your prompt that stays the same across requests. If you send the same long system prompt or document context repeatedly, subsequent calls skip re-processing that prefix, dramatically cutting latency and cost.", note:"Especially valuable for RAG pipelines, long system prompts, and agentic loops where the same context is reused across many calls." },
+  sft:         { layer:"Layer 03 — Model Adaptation", title:"Supervised Fine-Tuning", badge:"SFT", bcls:"gn", desc:"The most direct adaptation method: collect labeled (input, ideal output) pairs, then continue training the model on them. You show it what good answers look like in your domain. Applied to a pre-trained base LLM, not training from scratch. SFT is typically the first step before preference tuning (RLHF, DPO) or reinforcement learning.", note:"SFT alone is often sufficient for domain adaptation. Data quality matters far more than data quantity." },
+  lora:        { layer:"Layer 03 — Model Adaptation", title:"Low-Rank Adaptation", badge:"LoRA", bcls:"gn", desc:"A parameter-efficient fine-tuning technique. The original model weights stay frozen; small trainable low-rank matrices are inserted alongside them. Only these small matrices are updated during training. Result: domain-specific behavior at roughly 1% of the compute and memory cost of full fine-tuning. QLoRA combines this with quantization for even greater efficiency.", note:"LoRA made personal and on-device fine-tuning practical. It is the reason consumer-grade model adaptation exists." },
+  rlhf:        { layer:"Layer 03 — Model Adaptation", title:"RLHF / DPO", badge:"Alignment", bcls:"gn", desc:"Methods for aligning model behavior with human preferences. In RLHF, human raters compare outputs, a reward model is trained on those preferences, then reinforcement learning shapes the LLM. DPO (Direct Preference Optimization) achieves similar results more simply by skipping the reward model and optimizing the LLM directly on preference pairs. Both are applied after SFT.", note:"RLHF shaped ChatGPT's helpfulness, and DPO is now widely used for preference tuning. The big reasoning gains of 2025–26 came mainly from a related idea: reinforcement learning with verifiable rewards (for example GRPO), where the reward is whether a math answer checks out or code passes its tests." },
+  distill:     { layer:"Layer 03 — Model Adaptation", title:"Knowledge Distillation", badge:"Distillation", bcls:"gn", desc:"A large capable model (teacher) generates training signals for a smaller model (student). The student learns to mimic the teacher's output distribution, not just hard labels. The student model already exists as a pre-trained base; distillation transfers capability into it, making it punch above its weight class.", note:"Why small models keep getting better: they are trained on the outputs of much larger ones. DeepSeek, Phi, and Gemma all leverage distillation heavily." },
+  agent:       { layer:"Layer 04 — Deployment", title:"Agent", badge:"Agent", bcls:"pu", desc:"An LLM operating in a loop: receive goal, plan, act via function calls, observe results, adjust, repeat until done. The shift from answerer to executor. Agents can browse the web, write and run code, manage files, query databases: anything reachable via an API or tool.", note:"The hard problem isn't making agents act. It's making them stop gracefully when something goes wrong, and knowing when to ask for human input." },
+  finetune:    { layer:"Layer 04 — Deployment", title:"Fine-tuning", badge:"Fine-tuning", bcls:"te", desc:"Retraining a base model on your own domain data so it internalizes your knowledge, style, and terminology. More thorough than RAG: the knowledge is baked into the weights, not retrieved at runtime. Uses the Layer 03 adaptation methods (SFT, LoRA, etc.) as its implementation techniques.", note:"Bad data in, bad model out. Fine-tuning amplifies both the quality and the flaws of your dataset." },
+  framework:   { layer:"Layer 04 — Deployment", title:"Framework", badge:"LangChain, LlamaIndex, Vercel AI SDK", bcls:"am", desc:"Developer tooling that handles the plumbing: prompt templates, memory management, tool orchestration, chain composition, streaming. Reduces boilerplate dramatically, but adds an abstraction layer that can make debugging harder when things break.", note:"Frameworks are great for speed. Less great when something breaks in production at 2am and the error is three abstractions deep." },
+  eval:        { layer:"Layer 04 — Deployment", title:"Evals", badge:"Evaluation", bcls:"gy", desc:"Systematic measurement of AI system quality. Evals are to AI what tests are to software. They range from simple accuracy checks against known answers to LLM-as-judge approaches where another model rates output quality. Without evals, you're shipping vibes.", note:"If you can't measure it, you can't improve it. Evals should run in CI, not just before launch." },
+  redteam:     { layer:"Layer 04 — Deployment", title:"Red Teaming", badge:"Adversarial testing", bcls:"gy", desc:"Systematically attacking your own AI system to find failure modes before users do. Covers jailbreaks, prompt injection, data extraction, hallucination triggers, and general edge case discovery. Increasingly automated with tools that generate adversarial inputs at scale.", note:"Teams that skip red teaming do it in production instead. Users will find what you missed." },
+  smallmodel:  { layer:"Layer 04 — Deployment", title:"Small Model", badge:"Small / Distilled Model", bcls:"bl", desc:"Compact, fast, cheap models optimized for specific tasks. For classification, intent detection, extraction, or simple Q&A, a small model (Phi, Gemma, Llama 8B) often matches a frontier model at a fraction of cost and latency. Defaulting to the biggest available model is a common and expensive mistake.", note:"Match the model to the task. Not every problem needs a frontier model." },
+  multiagent:  { layer:"Layer 05 — Emerging", title:"Multi-Agent Systems", badge:"Multi-Agent", bcls:"co", desc:"Multiple AI agents collaborating, each specialized, each handling part of the problem. One researches, one writes, one critiques, one executes. They can debate, divide labor, and check each other's work. The coordination overhead, error propagation, and failure modes are the still-unsolved parts.", note:"The gap between the promise and reliability of multi-agent systems remains significant, though frameworks like CrewAI and AutoGen are narrowing it." },
+  syndata:     { layer:"Layer 05 — Emerging", title:"Synthetic Data", badge:"Synthetic Data", bcls:"co", desc:"Using AI to generate training data for AI. When real data is scarce, expensive, or privacy-sensitive, synthetic data fills the gap. As model quality improves, synthetic data quality improves too, enabling a flywheel where better models produce better training data for the next generation.", note:"One of the main answers to “what do you train on once you've consumed the internet?” Model collapse — where models degrade from training on too much synthetic data — is the key risk to manage." },
+  interp:      { layer:"Layer 05 — Emerging", title:"Interpretability", badge:"Mechanistic Interpretability", bcls:"co", desc:"The effort to understand what is actually happening inside a model: which neurons activate for which concepts, how circuits implement behaviors. Researchers have identified features corresponding to specific concepts, including safety-relevant patterns like deception, using techniques like sparse autoencoders on model activations.", note:"You can't fully trust or control a system you don't understand. Interpretability is the long road to real AI safety." },
+  thinking:    { layer:"Layer 05 — Emerging", title:"Thinking Model", badge:"Reasoning Model", bcls:"co", desc:"Models that reason before answering: they spend extra compute at inference time working through a problem step-by-step before committing to a response. OpenAI's o-series, Claude's extended thinking mode, and Gemini's thinking mode all implement this. Dramatically better at math, code, logic, and multi-step planning.", note:"Thinking models trade latency and cost for accuracy. Both scale with the thinking budget, and a hard problem can take many times the tokens and time of a standard response." },
+  testtime:    { layer:"Layer 05 — Emerging", title:"Test-Time Compute", badge:"Scaling paradigm", bcls:"co", desc:"The idea that you can improve AI performance by spending more compute at inference time rather than only at training time. Thinking models are one instance. Other approaches include generating multiple candidate answers and selecting the best (best-of-N), self-verification loops, and tree search over reasoning paths.", note:"Training-time scaling (bigger models, more data) dominated 2020–2023. Test-time compute scaling is the new frontier, letting existing models punch above their weight." },
 };
 
 let active = null;
@@ -592,14 +621,19 @@ function renderEmpty() {
   }, 120);
 }
 
+function setLayerCollapsed(layer, collapse) {
+  layer.classList.toggle('collapsed', collapse);
+  const header = layer.querySelector('.lh');
+  if (header) header.setAttribute('aria-expanded', String(!collapse));
+}
+
 function toggleLayer(id) {
-  document.getElementById(id).classList.toggle('collapsed');
+  const layer = document.getElementById(id);
+  setLayerCollapsed(layer, !layer.classList.contains('collapsed'));
 }
 
 function toggleAllLayers(collapse) {
-  document.querySelectorAll('.layer[id]').forEach(l => {
-    l.classList.toggle('collapsed', collapse);
-  });
+  document.querySelectorAll('.layer[id]').forEach(l => setLayerCollapsed(l, collapse));
 }
 
 function toggleTheme() {
@@ -607,24 +641,32 @@ function toggleTheme() {
   const current = html.getAttribute('data-theme');
   const next = current === 'dark' ? 'light' : 'dark';
   html.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
+  try { localStorage.setItem('theme', next); } catch (e) {}
 }
 
-// Restore saved theme
-(function() {
-  const saved = localStorage.getItem('theme');
-  if (saved) {
-    document.documentElement.setAttribute('data-theme', saved);
-  } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-    document.documentElement.setAttribute('data-theme', 'dark');
-  }
-})();
-
-// Resizable divider
+// Resizable divider. The split is kept as a fraction of the page width so it
+// survives window resizes without causing horizontal scroll.
 (function() {
   const divider = document.getElementById('divider');
   const page = document.querySelector('.page');
   let dragging = false;
+  let mapFraction = null;
+
+  function applySplit() {
+    if (mapFraction === null) return;
+    const totalW = page.getBoundingClientRect().width;
+    const mapW = Math.max(400, Math.min(totalW - 280, mapFraction * totalW));
+    const sidebarW = totalW - mapW - 6;
+    page.style.gridTemplateColumns = mapW + 'px 6px ' + sidebarW + 'px';
+  }
+
+  function dragTo(clientX) {
+    const pageRect = page.getBoundingClientRect();
+    mapFraction = (clientX - pageRect.left) / pageRect.width;
+    applySplit();
+  }
+
+  window.addEventListener('resize', applySplit);
 
   divider.addEventListener('mousedown', (e) => {
     dragging = true;
@@ -636,12 +678,7 @@ function toggleTheme() {
 
   document.addEventListener('mousemove', (e) => {
     if (!dragging) return;
-    const pageRect = page.getBoundingClientRect();
-    const offsetX = e.clientX - pageRect.left;
-    const totalW = pageRect.width;
-    const mapW = Math.max(400, Math.min(totalW - 280, offsetX));
-    const sidebarW = totalW - mapW - 6;
-    page.style.gridTemplateColumns = mapW + 'px 6px ' + sidebarW + 'px';
+    dragTo(e.clientX);
   });
 
   document.addEventListener('mouseup', () => {
@@ -661,13 +698,7 @@ function toggleTheme() {
 
   document.addEventListener('touchmove', (e) => {
     if (!dragging) return;
-    const touch = e.touches[0];
-    const pageRect = page.getBoundingClientRect();
-    const offsetX = touch.clientX - pageRect.left;
-    const totalW = pageRect.width;
-    const mapW = Math.max(400, Math.min(totalW - 280, offsetX));
-    const sidebarW = totalW - mapW - 6;
-    page.style.gridTemplateColumns = mapW + 'px 6px ' + sidebarW + 'px';
+    dragTo(e.touches[0].clientX);
   }, { passive: true });
 
   document.addEventListener('touchend', () => {
