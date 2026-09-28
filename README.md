@@ -1,8 +1,8 @@
 # AI Concept Map
 
-An interactive visual guide to the building blocks of modern AI. A single self-contained HTML file -- no build tools, no frameworks, no dependencies.
+An interactive visual guide to the building blocks of modern AI. A single self-contained HTML file: no build step, no frameworks, no dependencies (the Inter font loads from Google Fonts, with a system-font fallback offline).
 
-**[Live Demo](https://wxinix.github.io/ai-concept-map/)**
+**[Live Demo](https://wx241.github.io/ai-concept-map/)**
 
 ## Overview
 
@@ -25,14 +25,17 @@ Click any concept to read a concise explanation of what it is, why it matters, a
 - **Resizable split** -- drag the divider to adjust column widths
 - **Collapsible layers** -- click any layer header to expand or collapse
 - **Dark / light mode** -- toggle in the top-right corner (respects system preference)
+- **Keyboard accessible** -- every concept and layer header is a focusable button
 - **Responsive** -- stacks vertically on mobile screens
 
 ## Usage
 
 ```
-git clone https://github.com/wxinix/ai-concept-map.git
+git clone https://github.com/wx241/ai-concept-map.git
 cd ai-concept-map
-open index.html
+open index.html        # macOS
+start index.html       # Windows
+xdg-open index.html    # Linux
 ```
 
 Or simply download `index.html` and open it in any modern browser.
